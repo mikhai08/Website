@@ -66,6 +66,7 @@
     ]
   },
   "devDependencies": {
+    "@babel/plugin-proposal-private-property-in-object": "^7.21.11",
     "autoprefixer": "^10.4.19",
     "postcss": "^8.4.39",
     "postcss-flexbugs-fixes": "^5.0.2",
