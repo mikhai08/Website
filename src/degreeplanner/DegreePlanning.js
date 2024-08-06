@@ -411,9 +411,116 @@ const DegreePlanning = () => {
   );
 // two use effect
   useEffect(() => {
+    const updateRequirement = (req, selectedCourses) => {
+      if (req.isElective) {
+        const completedCredits = selectedCourses
+          .filter(course => req.courses.includes(course.id))
+          .reduce((sum, course) => sum + course.credits, 0);
+        return { ...req, completed: completedCredits };
+      } else {
+        let completed = req.courses.filter(courseId => 
+          selectedCourses.some(c => c.id === courseId)
+        ).length;
+  
+        // Check for AP credits
+        if (req.id === 'calculus' && apCredits.calculus) completed = 1;
+        if (req.id === 'statistics' && apCredits.statistics) completed = 1;
+        if (req.id === 'economics' && (apCredits.microeconomics || apCredits.macroeconomics)) completed = 1;
+  
+        return { ...req, completed: Math.min(completed, req.required) };
+      }
+    };
+
+
+    const updateMajorRequirements = () => {
+      const allSelectedCourses = semesters.flatMap(semester => semester.courses);
+      
+      setMajorRequirements(prevRequirements => ({
+        ...prevRequirements,
+        requirements: prevRequirements.requirements.map(requirement => {
+          if (requirement.isCollapsible) {
+            return {
+              ...requirement,
+              subRequirements: requirement.subRequirements.map(subReq => updateRequirement(subReq, allSelectedCourses))
+            };
+          } else {
+            return updateRequirement(requirement, allSelectedCourses);
+          }
+        })
+      }));
+    };
     updateMajorRequirements();
   }, [semesters, apCredits]);
+
   useEffect(() => {
+    const preloadedSchedule = [
+      {
+        id: 'Fall2024',
+        name: 'Fall 2024',
+        courses: [
+          { id: 'IDST101', name: 'College Thriving', credits: 1, isPreloaded: true },
+          { id: 'POLI150', name: 'International Relations', credits: 3, isPreloaded: true, satisfies: 'globalUnderstanding' },
+          { id: 'ENGL105', name: 'English Compositions and Rhetoric, writing in the natural sciences', credits: 3, isPreloaded: true, satisfies: 'writing' },
+          { id: 'STOR155', name: 'Statistics', credits: 3, isPreloaded: true, satisfies: 'quantReasoning' },
+          { id: 'ECON101', name: 'Economics', credits: 4, isPreloaded: true, satisfies: 'waysKnowing' },
+          { id: 'HIST140', name: 'World After 1945', credits: 3, isPreloaded: true, satisfies: 'humanPast' },
+        ],
+        credits: 17,
+      },
+      {
+        id: 'Spring2025',
+        name: 'Spring 2025',
+        courses: [
+          { id: 'ECON310', name: 'Intermediate Microeconomics', credits: 3, isPreloaded: true },
+          { id: 'PHIL101', name: 'Philosophy', credits: 3, isPreloaded: true, satisfies: 'ethicValues' },
+          { id: 'IDST126L', name: 'Lab', credits: 1, isPreloaded: true, satisfies: 'dataLiteracy' },
+          { id: 'IDST126', name: 'Values and Prices', credits: 3, isPreloaded: true, satisfies: 'tripleI' },
+          { id: 'HIST53', name: 'Traveling to European Cities: American Writers/Cultural Identities, 1830-2000.', credits: 3, isPreloaded: true, satisfies: 'firstYearSeminar' },
+          { id: 'ECON125', name: 'Entrepreneurship', credits: 3, isPreloaded: true, satisfies: 'creativeExpression' },
+        ],
+        credits: 16,
+      },
+      {
+        id: 'Fall2025',
+        name: 'Fall 2025',
+        courses: [
+          { id: 'ECON410', name: 'Intermediate Micro', credits: 4, isPreloaded: true },
+          { id: 'LFIT111', name: 'Swimming', credits: 1, isPreloaded: true },
+          { id: 'HIST364', name: 'History of American Business', credits: 3, isPreloaded: true },
+          { id: 'BUSI100', name: 'Intro to Business', credits: 1.5, isPreloaded: true },
+          { id: 'COMM348', name: 'Algorithms in Society', credits: 3, isPreloaded: true, satisfies: 'powerDifference' },
+          { id: 'ECON325', name: 'Entrepreneurship', credits: 3, isPreloaded: true },
+        ],
+        credits: 15.5,
+      },
+      {
+        id: 'Spring2026',
+        name: 'Spring 2026',
+        courses: [
+          { id: 'BUSI488', name: 'Data Science in the Business World', credits: 3, isPreloaded: true },
+          { id: 'COMP110', name: 'Intro to Programming', credits: 3, isPreloaded: true },
+          { id: 'BUSI407', name: 'Accounting', credits: 3, isPreloaded: true },
+          { id: 'ECON327', name: 'Branding', credits: 3, isPreloaded: true },
+          { id: 'BUSI506', name: 'Venture Capital', credits: 3, isPreloaded: true },
+          { id: 'BUSI505', name: 'Entrepreneurial Consulting', credits: 3, isPreloaded: true, satisfies: 'highImpact' },
+        ],
+        credits: 18,
+      },
+      {
+        id: 'Fall2026',
+        name: 'Fall 2026',
+        courses: [
+          { id: 'BUSI406', name: 'Marketing', credits: 3, isPreloaded: true },
+          { id: 'COMP283', name: 'Discrete Structures', credits: 3, isPreloaded: true },
+          { id: 'BUSI408', name: 'Corporate Finance', credits: 3, isPreloaded: true },
+          { id: 'BUSI405', name: 'Organizational Behavior', credits: 3, isPreloaded: true },
+          { id: 'BUSI403', name: 'Operations and Technology Management', credits: 3, isPreloaded: true },
+        ],
+        credits: 15,
+      },
+    ];
+
+
     if (activeView === 'premium') {
       setSemesters(prevSemesters => {
         const updatedSemesters = [...prevSemesters];
@@ -614,43 +721,9 @@ const DegreePlanning = () => {
     setShowRequirementDetails(false);
   };
 
-  const updateMajorRequirements = () => {
-    const allSelectedCourses = semesters.flatMap(semester => semester.courses);
-    
-    setMajorRequirements(prevRequirements => ({
-      ...prevRequirements,
-      requirements: prevRequirements.requirements.map(requirement => {
-        if (requirement.isCollapsible) {
-          return {
-            ...requirement,
-            subRequirements: requirement.subRequirements.map(subReq => updateRequirement(subReq, allSelectedCourses))
-          };
-        } else {
-          return updateRequirement(requirement, allSelectedCourses);
-        }
-      })
-    }));
-  };
+  
 
-  const updateRequirement = (req, selectedCourses) => {
-    if (req.isElective) {
-      const completedCredits = selectedCourses
-        .filter(course => req.courses.includes(course.id))
-        .reduce((sum, course) => sum + course.credits, 0);
-      return { ...req, completed: completedCredits };
-    } else {
-      let completed = req.courses.filter(courseId => 
-        selectedCourses.some(c => c.id === courseId)
-      ).length;
-
-      // Check for AP credits
-      if (req.id === 'calculus' && apCredits.calculus) completed = 1;
-      if (req.id === 'statistics' && apCredits.statistics) completed = 1;
-      if (req.id === 'economics' && (apCredits.microeconomics || apCredits.macroeconomics)) completed = 1;
-
-      return { ...req, completed: Math.min(completed, req.required) };
-    }
-  };
+  
 
   const handleRequirementClick = (requirement) => {
     console.log('Clicked requirement:', requirement); // Add this for debugging
@@ -673,6 +746,9 @@ const DegreePlanning = () => {
         return isDarkMode ? 'bg-orange-600 text-white' : 'bg-orange-300 text-orange-800';
       case 'BUSI505':
         return 'bg-gradient-to-r from-blue-500 to-orange-500 text-white';
+      default:
+        // Handle the default case here
+        break;
     }
   
     // Helper function to get color based on category
@@ -724,7 +800,7 @@ const DegreePlanning = () => {
   if (genEdCourses) {
     for (const [category, subcategories] of Object.entries(genEdCourses)) {
       if (Array.isArray(subcategories)) {
-        if (subcategories.some(course => course.id === course.id)) {
+        if (subcategories.some(c => c.id === course.id)) {
           return getColorForCategory(category);
         }
       } else {
@@ -747,8 +823,7 @@ const DegreePlanning = () => {
       listeners,
       setNodeRef,
       transform,
-      transition,
-      isDragging,
+      transition
     } = useSortable({ 
       id: course.id,
       disabled: course.isPreloaded,
@@ -963,6 +1038,74 @@ const DegreePlanning = () => {
 
   // Update the existing useEffect to handle premium features
   useEffect(() => {
+    const preloadedSchedule = [
+      {
+        id: 'Fall2024',
+        name: 'Fall 2024',
+        courses: [
+          { id: 'IDST101', name: 'College Thriving', credits: 1, isPreloaded: true },
+          { id: 'POLI150', name: 'International Relations', credits: 3, isPreloaded: true, satisfies: 'globalUnderstanding' },
+          { id: 'ENGL105', name: 'English Compositions and Rhetoric, writing in the natural sciences', credits: 3, isPreloaded: true, satisfies: 'writing' },
+          { id: 'STOR155', name: 'Statistics', credits: 3, isPreloaded: true, satisfies: 'quantReasoning' },
+          { id: 'ECON101', name: 'Economics', credits: 4, isPreloaded: true, satisfies: 'waysKnowing' },
+          { id: 'HIST140', name: 'World After 1945', credits: 3, isPreloaded: true, satisfies: 'humanPast' },
+        ],
+        credits: 17,
+      },
+      {
+        id: 'Spring2025',
+        name: 'Spring 2025',
+        courses: [
+          { id: 'ECON310', name: 'Intermediate Microeconomics', credits: 3, isPreloaded: true },
+          { id: 'PHIL101', name: 'Philosophy', credits: 3, isPreloaded: true, satisfies: 'ethicValues' },
+          { id: 'IDST126L', name: 'Lab', credits: 1, isPreloaded: true, satisfies: 'dataLiteracy' },
+          { id: 'IDST126', name: 'Values and Prices', credits: 3, isPreloaded: true, satisfies: 'tripleI' },
+          { id: 'HIST53', name: 'Traveling to European Cities: American Writers/Cultural Identities, 1830-2000.', credits: 3, isPreloaded: true, satisfies: 'firstYearSeminar' },
+          { id: 'ECON125', name: 'Entrepreneurship', credits: 3, isPreloaded: true, satisfies: 'creativeExpression' },
+        ],
+        credits: 16,
+      },
+      {
+        id: 'Fall2025',
+        name: 'Fall 2025',
+        courses: [
+          { id: 'ECON410', name: 'Intermediate Micro', credits: 4, isPreloaded: true },
+          { id: 'LFIT111', name: 'Swimming', credits: 1, isPreloaded: true },
+          { id: 'HIST364', name: 'History of American Business', credits: 3, isPreloaded: true },
+          { id: 'BUSI100', name: 'Intro to Business', credits: 1.5, isPreloaded: true },
+          { id: 'COMM348', name: 'Algorithms in Society', credits: 3, isPreloaded: true, satisfies: 'powerDifference' },
+          { id: 'ECON325', name: 'Entrepreneurship', credits: 3, isPreloaded: true },
+        ],
+        credits: 15.5,
+      },
+      {
+        id: 'Spring2026',
+        name: 'Spring 2026',
+        courses: [
+          { id: 'BUSI488', name: 'Data Science in the Business World', credits: 3, isPreloaded: true },
+          { id: 'COMP110', name: 'Intro to Programming', credits: 3, isPreloaded: true },
+          { id: 'BUSI407', name: 'Accounting', credits: 3, isPreloaded: true },
+          { id: 'ECON327', name: 'Branding', credits: 3, isPreloaded: true },
+          { id: 'BUSI506', name: 'Venture Capital', credits: 3, isPreloaded: true },
+          { id: 'BUSI505', name: 'Entrepreneurial Consulting', credits: 3, isPreloaded: true, satisfies: 'highImpact' },
+        ],
+        credits: 18,
+      },
+      {
+        id: 'Fall2026',
+        name: 'Fall 2026',
+        courses: [
+          { id: 'BUSI406', name: 'Marketing', credits: 3, isPreloaded: true },
+          { id: 'COMP283', name: 'Discrete Structures', credits: 3, isPreloaded: true },
+          { id: 'BUSI408', name: 'Corporate Finance', credits: 3, isPreloaded: true },
+          { id: 'BUSI405', name: 'Organizational Behavior', credits: 3, isPreloaded: true },
+          { id: 'BUSI403', name: 'Operations and Technology Management', credits: 3, isPreloaded: true },
+        ],
+        credits: 15,
+      },
+    ];
+
+
     if (activeView === 'premium') {
       setSemesters(prevSemesters => {
         return prevSemesters.map(semester => {
@@ -1037,6 +1180,83 @@ const DegreePlanning = () => {
   );
   };
   useEffect(() => {
+    const fixedSemesters = [
+      { id: 'Fall2024', name: 'Fall 2024', courses: [], credits: 0 },
+      { id: 'Spring2025', name: 'Spring 2025', courses: [], credits: 0 },
+      { id: 'Fall2025', name: 'Fall 2025', courses: [], credits: 0 },
+      { id: 'Spring2026', name: 'Spring 2026', courses: [], credits: 0 },
+      { id: 'Fall2026', name: 'Fall 2026', courses: [], credits: 0 },
+      { id: 'Spring2027', name: 'Spring 2027', courses: [], credits: 0 },
+      { id: 'Fall2027', name: 'Fall 2027', courses: [], credits: 0 },
+      { id: 'Spring2028', name: 'Spring 2028', courses: [], credits: 0 },
+    ];
+    const preloadedSchedule = [
+      {
+        id: 'Fall2024',
+        name: 'Fall 2024',
+        courses: [
+          { id: 'IDST101', name: 'College Thriving', credits: 1, isPreloaded: true },
+          { id: 'POLI150', name: 'International Relations', credits: 3, isPreloaded: true, satisfies: 'globalUnderstanding' },
+          { id: 'ENGL105', name: 'English Compositions and Rhetoric, writing in the natural sciences', credits: 3, isPreloaded: true, satisfies: 'writing' },
+          { id: 'STOR155', name: 'Statistics', credits: 3, isPreloaded: true, satisfies: 'quantReasoning' },
+          { id: 'ECON101', name: 'Economics', credits: 4, isPreloaded: true, satisfies: 'waysKnowing' },
+          { id: 'HIST140', name: 'World After 1945', credits: 3, isPreloaded: true, satisfies: 'humanPast' },
+        ],
+        credits: 17,
+      },
+      {
+        id: 'Spring2025',
+        name: 'Spring 2025',
+        courses: [
+          { id: 'ECON310', name: 'Intermediate Microeconomics', credits: 3, isPreloaded: true },
+          { id: 'PHIL101', name: 'Philosophy', credits: 3, isPreloaded: true, satisfies: 'ethicValues' },
+          { id: 'IDST126L', name: 'Lab', credits: 1, isPreloaded: true, satisfies: 'dataLiteracy' },
+          { id: 'IDST126', name: 'Values and Prices', credits: 3, isPreloaded: true, satisfies: 'tripleI' },
+          { id: 'HIST53', name: 'Traveling to European Cities: American Writers/Cultural Identities, 1830-2000.', credits: 3, isPreloaded: true, satisfies: 'firstYearSeminar' },
+          { id: 'ECON125', name: 'Entrepreneurship', credits: 3, isPreloaded: true, satisfies: 'creativeExpression' },
+        ],
+        credits: 16,
+      },
+      {
+        id: 'Fall2025',
+        name: 'Fall 2025',
+        courses: [
+          { id: 'ECON410', name: 'Intermediate Micro', credits: 4, isPreloaded: true },
+          { id: 'LFIT111', name: 'Swimming', credits: 1, isPreloaded: true },
+          { id: 'HIST364', name: 'History of American Business', credits: 3, isPreloaded: true },
+          { id: 'BUSI100', name: 'Intro to Business', credits: 1.5, isPreloaded: true },
+          { id: 'COMM348', name: 'Algorithms in Society', credits: 3, isPreloaded: true, satisfies: 'powerDifference' },
+          { id: 'ECON325', name: 'Entrepreneurship', credits: 3, isPreloaded: true },
+        ],
+        credits: 15.5,
+      },
+      {
+        id: 'Spring2026',
+        name: 'Spring 2026',
+        courses: [
+          { id: 'BUSI488', name: 'Data Science in the Business World', credits: 3, isPreloaded: true },
+          { id: 'COMP110', name: 'Intro to Programming', credits: 3, isPreloaded: true },
+          { id: 'BUSI407', name: 'Accounting', credits: 3, isPreloaded: true },
+          { id: 'ECON327', name: 'Branding', credits: 3, isPreloaded: true },
+          { id: 'BUSI506', name: 'Venture Capital', credits: 3, isPreloaded: true },
+          { id: 'BUSI505', name: 'Entrepreneurial Consulting', credits: 3, isPreloaded: true, satisfies: 'highImpact' },
+        ],
+        credits: 18,
+      },
+      {
+        id: 'Fall2026',
+        name: 'Fall 2026',
+        courses: [
+          { id: 'BUSI406', name: 'Marketing', credits: 3, isPreloaded: true },
+          { id: 'COMP283', name: 'Discrete Structures', credits: 3, isPreloaded: true },
+          { id: 'BUSI408', name: 'Corporate Finance', credits: 3, isPreloaded: true },
+          { id: 'BUSI405', name: 'Organizational Behavior', credits: 3, isPreloaded: true },
+          { id: 'BUSI403', name: 'Operations and Technology Management', credits: 3, isPreloaded: true },
+        ],
+        credits: 15,
+      },
+    ];
+
   let filteredSemesters = filterSemesters(fixedSemesters, graduationSemester);
   
   if (activeView === 'premium') {
@@ -1060,6 +1280,72 @@ const DegreePlanning = () => {
   const [selectedMajor, setSelectedMajor] = useState('');
 
   useEffect(() => {
+    const preloadedSchedule = [
+      {
+        id: 'Fall2024',
+        name: 'Fall 2024',
+        courses: [
+          { id: 'IDST101', name: 'College Thriving', credits: 1, isPreloaded: true },
+          { id: 'POLI150', name: 'International Relations', credits: 3, isPreloaded: true, satisfies: 'globalUnderstanding' },
+          { id: 'ENGL105', name: 'English Compositions and Rhetoric, writing in the natural sciences', credits: 3, isPreloaded: true, satisfies: 'writing' },
+          { id: 'STOR155', name: 'Statistics', credits: 3, isPreloaded: true, satisfies: 'quantReasoning' },
+          { id: 'ECON101', name: 'Economics', credits: 4, isPreloaded: true, satisfies: 'waysKnowing' },
+          { id: 'HIST140', name: 'World After 1945', credits: 3, isPreloaded: true, satisfies: 'humanPast' },
+        ],
+        credits: 17,
+      },
+      {
+        id: 'Spring2025',
+        name: 'Spring 2025',
+        courses: [
+          { id: 'ECON310', name: 'Intermediate Microeconomics', credits: 3, isPreloaded: true },
+          { id: 'PHIL101', name: 'Philosophy', credits: 3, isPreloaded: true, satisfies: 'ethicValues' },
+          { id: 'IDST126L', name: 'Lab', credits: 1, isPreloaded: true, satisfies: 'dataLiteracy' },
+          { id: 'IDST126', name: 'Values and Prices', credits: 3, isPreloaded: true, satisfies: 'tripleI' },
+          { id: 'HIST53', name: 'Traveling to European Cities: American Writers/Cultural Identities, 1830-2000.', credits: 3, isPreloaded: true, satisfies: 'firstYearSeminar' },
+          { id: 'ECON125', name: 'Entrepreneurship', credits: 3, isPreloaded: true, satisfies: 'creativeExpression' },
+        ],
+        credits: 16,
+      },
+      {
+        id: 'Fall2025',
+        name: 'Fall 2025',
+        courses: [
+          { id: 'ECON410', name: 'Intermediate Micro', credits: 4, isPreloaded: true },
+          { id: 'LFIT111', name: 'Swimming', credits: 1, isPreloaded: true },
+          { id: 'HIST364', name: 'History of American Business', credits: 3, isPreloaded: true },
+          { id: 'BUSI100', name: 'Intro to Business', credits: 1.5, isPreloaded: true },
+          { id: 'COMM348', name: 'Algorithms in Society', credits: 3, isPreloaded: true, satisfies: 'powerDifference' },
+          { id: 'ECON325', name: 'Entrepreneurship', credits: 3, isPreloaded: true },
+        ],
+        credits: 15.5,
+      },
+      {
+        id: 'Spring2026',
+        name: 'Spring 2026',
+        courses: [
+          { id: 'BUSI488', name: 'Data Science in the Business World', credits: 3, isPreloaded: true },
+          { id: 'COMP110', name: 'Intro to Programming', credits: 3, isPreloaded: true },
+          { id: 'BUSI407', name: 'Accounting', credits: 3, isPreloaded: true },
+          { id: 'ECON327', name: 'Branding', credits: 3, isPreloaded: true },
+          { id: 'BUSI506', name: 'Venture Capital', credits: 3, isPreloaded: true },
+          { id: 'BUSI505', name: 'Entrepreneurial Consulting', credits: 3, isPreloaded: true, satisfies: 'highImpact' },
+        ],
+        credits: 18,
+      },
+      {
+        id: 'Fall2026',
+        name: 'Fall 2026',
+        courses: [
+          { id: 'BUSI406', name: 'Marketing', credits: 3, isPreloaded: true },
+          { id: 'COMP283', name: 'Discrete Structures', credits: 3, isPreloaded: true },
+          { id: 'BUSI408', name: 'Corporate Finance', credits: 3, isPreloaded: true },
+          { id: 'BUSI405', name: 'Organizational Behavior', credits: 3, isPreloaded: true },
+          { id: 'BUSI403', name: 'Operations and Technology Management', credits: 3, isPreloaded: true },
+        ],
+        credits: 15,
+      },
+    ];
     if (activeView === 'premium') {
       setSemesters(prevSemesters => {
         return prevSemesters.map(semester => {
@@ -1238,6 +1524,72 @@ const DegreePlanning = () => {
   
 
   useEffect(() => {
+    const preloadedSchedule = [
+      {
+        id: 'Fall2024',
+        name: 'Fall 2024',
+        courses: [
+          { id: 'IDST101', name: 'College Thriving', credits: 1, isPreloaded: true },
+          { id: 'POLI150', name: 'International Relations', credits: 3, isPreloaded: true, satisfies: 'globalUnderstanding' },
+          { id: 'ENGL105', name: 'English Compositions and Rhetoric, writing in the natural sciences', credits: 3, isPreloaded: true, satisfies: 'writing' },
+          { id: 'STOR155', name: 'Statistics', credits: 3, isPreloaded: true, satisfies: 'quantReasoning' },
+          { id: 'ECON101', name: 'Economics', credits: 4, isPreloaded: true, satisfies: 'waysKnowing' },
+          { id: 'HIST140', name: 'World After 1945', credits: 3, isPreloaded: true, satisfies: 'humanPast' },
+        ],
+        credits: 17,
+      },
+      {
+        id: 'Spring2025',
+        name: 'Spring 2025',
+        courses: [
+          { id: 'ECON310', name: 'Intermediate Microeconomics', credits: 3, isPreloaded: true },
+          { id: 'PHIL101', name: 'Philosophy', credits: 3, isPreloaded: true, satisfies: 'ethicValues' },
+          { id: 'IDST126L', name: 'Lab', credits: 1, isPreloaded: true, satisfies: 'dataLiteracy' },
+          { id: 'IDST126', name: 'Values and Prices', credits: 3, isPreloaded: true, satisfies: 'tripleI' },
+          { id: 'HIST53', name: 'Traveling to European Cities: American Writers/Cultural Identities, 1830-2000.', credits: 3, isPreloaded: true, satisfies: 'firstYearSeminar' },
+          { id: 'ECON125', name: 'Entrepreneurship', credits: 3, isPreloaded: true, satisfies: 'creativeExpression' },
+        ],
+        credits: 16,
+      },
+      {
+        id: 'Fall2025',
+        name: 'Fall 2025',
+        courses: [
+          { id: 'ECON410', name: 'Intermediate Micro', credits: 4, isPreloaded: true },
+          { id: 'LFIT111', name: 'Swimming', credits: 1, isPreloaded: true },
+          { id: 'HIST364', name: 'History of American Business', credits: 3, isPreloaded: true },
+          { id: 'BUSI100', name: 'Intro to Business', credits: 1.5, isPreloaded: true },
+          { id: 'COMM348', name: 'Algorithms in Society', credits: 3, isPreloaded: true, satisfies: 'powerDifference' },
+          { id: 'ECON325', name: 'Entrepreneurship', credits: 3, isPreloaded: true },
+        ],
+        credits: 15.5,
+      },
+      {
+        id: 'Spring2026',
+        name: 'Spring 2026',
+        courses: [
+          { id: 'BUSI488', name: 'Data Science in the Business World', credits: 3, isPreloaded: true },
+          { id: 'COMP110', name: 'Intro to Programming', credits: 3, isPreloaded: true },
+          { id: 'BUSI407', name: 'Accounting', credits: 3, isPreloaded: true },
+          { id: 'ECON327', name: 'Branding', credits: 3, isPreloaded: true },
+          { id: 'BUSI506', name: 'Venture Capital', credits: 3, isPreloaded: true },
+          { id: 'BUSI505', name: 'Entrepreneurial Consulting', credits: 3, isPreloaded: true, satisfies: 'highImpact' },
+        ],
+        credits: 18,
+      },
+      {
+        id: 'Fall2026',
+        name: 'Fall 2026',
+        courses: [
+          { id: 'BUSI406', name: 'Marketing', credits: 3, isPreloaded: true },
+          { id: 'COMP283', name: 'Discrete Structures', credits: 3, isPreloaded: true },
+          { id: 'BUSI408', name: 'Corporate Finance', credits: 3, isPreloaded: true },
+          { id: 'BUSI405', name: 'Organizational Behavior', credits: 3, isPreloaded: true },
+          { id: 'BUSI403', name: 'Operations and Technology Management', credits: 3, isPreloaded: true },
+        ],
+        credits: 15,
+      },
+    ];
   const allPreloadedCourses = preloadedSchedule.flatMap(semester => semester.courses);
   setPreloadedCourses(allPreloadedCourses);
   }, []);

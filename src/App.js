@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Calendar, FileText, Cloud, BarChart,  List, Clock, Layout, Moon, Sun } from 'lucide-react';
-import DynamicDashboard from './DynamicDashboard';
 import SponsorsPartners from './SponsorsPartners';
 import FAQ from './FAQ';
 import DegreePlanning from './degreeplanner/DegreePlanning'; // Adjust the path as needed
@@ -9,7 +8,7 @@ import SlidingFeatures from './SlidingFeatures';
 import StudentLifeFeatures from './StudentLifeFeatures';
 import CalendarFeatures from './CalendarFeatures';
 import CareerPage from './CareerPage';
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+
 
 const Button = ({ children, variant = 'default', size = 'md', ...props }) => {
     const baseStyles = "font-semibold rounded-md transition-colors";

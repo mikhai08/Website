@@ -75,31 +75,34 @@ const GenEdRequirements = ({ semesters, handleFindCourses, preloadedCourses, apC
     const flattenedGenEdCourses = flattenGenEdCourses(genEdCourses);
   
     useEffect(() => {
-      updateSatisfiedRequirements();
-      updateTakenCourses();
-    }, [semesters, preloadedCourses, apCredits]);
-  
-    const updateTakenCourses = () => {
-      const allTakenCourses = [
+      const getAllTakenCourses = () => [
         ...semesters.flatMap(semester => semester.courses.map(course => course.id)),
         ...preloadedCourses.map(course => course.id)
       ];
-      setTakenCourses(allTakenCourses);
-    };
-  
-    const isRequirementSatisfied = (requirement) => {
-      return requirement.courses.some(courseId => takenCourses.includes(courseId));
-    };
-  
-    const updateSatisfiedRequirements = () => {
-      const newSatisfiedRequirements = {};
-      Object.entries(genEdRequirements).forEach(([category, { requirements }]) => {
-        requirements.forEach(req => {
-          newSatisfiedRequirements[req.id] = isRequirementSatisfied(req);
+    
+      const isRequirementSatisfied = (requirement, allTakenCourses) => {
+        return requirement.courses.some(courseId => 
+          allTakenCourses.includes(courseId) || apCredits.includes(courseId)
+        );
+      };
+    
+      const updateSatisfiedRequirements = (allTakenCourses) => {
+        const newSatisfiedRequirements = {};
+        Object.entries(genEdRequirements).forEach(([category, { requirements }]) => {
+          requirements.forEach(req => {
+            newSatisfiedRequirements[req.id] = isRequirementSatisfied(req, allTakenCourses);
+          });
         });
-      });
-      setSatisfiedRequirements(newSatisfiedRequirements);
-    };
+        setSatisfiedRequirements(newSatisfiedRequirements);
+      };
+    
+      const allTakenCourses = getAllTakenCourses();
+      setTakenCourses(allTakenCourses);
+      updateSatisfiedRequirements(allTakenCourses);
+    }, [semesters, preloadedCourses, apCredits]);
+    
+  
+    
   
     const toggleCategory = (category) => {
       setExpandedCategories(prev => ({

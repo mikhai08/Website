@@ -114,22 +114,23 @@ const ComputerScienceMajorRequirements = ({
     });
   
     const [showRequirementDetails, setShowRequirementDetails] = useState(false);
-    const [selectedRequirement, setSelectedRequirement] = useState(null);
+    const [selectedRequirement] = useState(null);
   
     useEffect(() => {
+      const updateCsMajorRequirements = () => {
+        const allSelectedCourses = semesters.flatMap(semester => semester.courses);
+        
+        setCsMajorRequirements(prevRequirements => ({
+          ...prevRequirements,
+          requirements: prevRequirements.requirements.map(requirement => 
+            updateRequirement(requirement, allSelectedCourses)
+          )
+        }));
+      };
       updateCsMajorRequirements();
     }, [semesters]);
   
-    const updateCsMajorRequirements = () => {
-      const allSelectedCourses = semesters.flatMap(semester => semester.courses);
-      
-      setCsMajorRequirements(prevRequirements => ({
-        ...prevRequirements,
-        requirements: prevRequirements.requirements.map(requirement => 
-          updateRequirement(requirement, allSelectedCourses)
-        )
-      }));
-    };
+    
   
     const updateRequirement = (req, selectedCourses) => {
       if (req.isElective) {
